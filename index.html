@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Donghuku</title>
+<meta name="theme-color" content="#14101c">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --bg-deep:#14101c; --bg-panel:#1e1830; --bg-panel-2:#241c3a;
+    --gold:#e8a93c; --jade:#3fbf9e; --blue:#4aa3ff;
+    --text-1:#f4efe6; --text-2:#9c93a8; --line:#332a4a; --danger:#e05a5a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;overflow-x:hidden;}
+  body{background:var(--bg-deep); color:var(--text-1); font-family:'Manrope',sans-serif; -webkit-font-smoothing:antialiased;}
+  h1,h2,h3,.brand{font-family:'Bungee',cursive; letter-spacing:0.5px;}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;
+    background:radial-gradient(ellipse 60% 40% at 20% -10%, rgba(232,169,60,0.10), transparent 60%),
+    radial-gradient(ellipse 50% 35% at 90% 10%, rgba(63,191,158,0.08), transparent 60%), var(--bg-deep);}
+
+  .app{max-width:480px;margin:0 auto;min-height:100vh;position:relative;padding:0 0 84px;}
+  .view{padding:0 16px;}
+
+  .topbar{display:flex;align-items:center;gap:12px;padding:20px 16px 14px;}
+  .avatar-sm{width:44px;height:44px;border-radius:50%;background:var(--bg-panel);border:2px solid var(--jade);
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;overflow:hidden;flex-shrink:0;cursor:pointer;}
+  .avatar-sm img{width:100%;height:100%;object-fit:cover;}
+  .greet{flex:1;min-width:0;}
+  .greet .hi{font-size:11px;color:var(--text-2);}
+  .greet .nm{font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px;}
+  .badge-inline{font-size:9px;font-weight:800;padding:2px 6px;border-radius:6px;letter-spacing:0.3px;flex-shrink:0;}
+  .badge-inline.vip{background:var(--blue);color:#fff;}
+  .badge-inline.owner{background:linear-gradient(135deg,var(--gold),#c9862a);color:#20160a;}
+  .topbar .icon-btn{width:38px;height:38px;border-radius:50%;background:var(--bg-panel);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;color:var(--gold);cursor:pointer;flex-shrink:0;}
+
+  .hero{margin:4px 16px 18px;border-radius:20px;overflow:hidden;position:relative;height:230px;
+    background:var(--bg-panel);border:1px solid var(--line);}
+  .hero-slide{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity .5s ease;
+    display:flex;align-items:flex-end;}
+  .hero-slide.on{opacity:1;}
+  .hero-slide::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg, rgba(20,16,28,0.95) 10%, rgba(20,16,28,0.2) 60%, transparent);}
+  .hero-txt{position:relative;z-index:2;padding:16px;}
+  .hero-txt .tag{font-size:9px;font-weight:800;padding:3px 8px;border-radius:999px;letter-spacing:0.5px;display:inline-block;margin-bottom:6px;}
+  .hero-txt .tag.donghua{background:var(--gold);color:#20160a;}
+  .hero-txt .tag.anime{background:var(--jade);color:#0a1f1a;}
+  .hero-txt h3{font-family:'Manrope';font-size:16px;font-weight:800;margin:0 0 4px;line-height:1.3;}
+  .hero-txt p{font-size:11px;color:var(--text-2);margin:0;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .hero-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-2);font-size:13px;gap:6px;text-align:center;padding:0 20px;}
+  .dots{position:absolute;bottom:10px;right:14px;z-index:3;display:flex;gap:5px;}
+  .dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.35);}
+  .dot.on{background:var(--gold);width:16px;border-radius:4px;}
+
+  .announce{margin:0 16px 20px;padding:14px 16px;border-radius:14px;background:var(--bg-panel);border:1px solid var(--line);
+    font-size:12.5px;color:var(--text-2);line-height:1.5;}
+  .announce b{color:var(--text-1);}
+
+  .sec-head{display:flex;align-items:center;justify-content:space-between;margin:0 16px 12px;}
+  .sec-head h2{font-family:'Manrope';font-size:15px;font-weight:800;margin:0;}
+  .sec-head .link{font-size:11.5px;color:var(--gold);font-weight:700;cursor:pointer;display:flex;align-items:center;gap:2px;}
+
+  .chiprow{display:flex;gap:8px;overflow-x:auto;margin:0 0 22px;padding:0 16px 4px;}
+  .chip{flex-shrink:0;padding:9px 16px;border-radius:12px;background:var(--bg-panel);border:1px solid var(--line);
+    font-size:12.5px;font-weight:700;color:var(--gold);cursor:pointer;}
+
+  .cwrow{display:flex;gap:12px;overflow-x:auto;padding:0 16px 4px;margin-bottom:22px;}
+  .cwcard{flex-shrink:0;width:158px;cursor:pointer;}
+  .cwcard .thumb{width:100%;height:96px;border-radius:12px;background:var(--bg-panel-2);background-size:cover;background-position:center;
+    position:relative;overflow:hidden;border:1px solid var(--line);}
+  .cwcard .ep-pill{position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,0.65);font-size:9px;font-weight:800;padding:2px 7px;border-radius:6px;}
+  .cwcard .cwprog{position:absolute;bottom:0;left:0;height:3px;background:var(--gold);}
+  .cwcard .t{font-size:12px;font-weight:700;margin:6px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  .search-wrap{position:relative;margin:0 16px 16px;}
+  .search-wrap input{width:100%;padding:12px 14px 12px 40px;border-radius:14px;border:1px solid var(--line);
+    background:var(--bg-panel);color:var(--text-1);font-family:'Manrope';font-size:14px;outline:none;}
+  .search-wrap input:focus{border-color:var(--gold);}
+  .search-wrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);opacity:0.5;}
+
+  .tabs{display:flex;gap:8px;margin:0 16px 18px;}
+  .tab{flex:1;text-align:center;padding:10px 0;border-radius:12px;font-weight:700;font-size:12.5px;cursor:pointer;
+    border:1px solid var(--line);background:var(--bg-panel);color:var(--text-2);}
+  .tab.active[data-cat="donghua"]{background:linear-gradient(135deg, rgba(232,169,60,0.18), rgba(232,169,60,0.05));border-color:var(--gold);color:var(--gold);}
+  .tab.active[data-cat="anime"]{background:linear-gradient(135deg, rgba(63,191,158,0.18), rgba(63,191,158,0.05));border-color:var(--jade);color:var(--jade);}
+  .tab.active[data-cat="all"]{background:var(--bg-panel-2);border-color:var(--text-1);color:var(--text-1);}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 16px;}
+  .card{background:var(--bg-panel);border-radius:16px;overflow:hidden;border:1px solid var(--line);cursor:pointer;position:relative;}
+  .card .poster{width:100%;aspect-ratio:2/3;background:var(--bg-panel-2);background-size:cover;background-position:center;position:relative;
+    display:flex;align-items:center;justify-content:center;}
+  .card .poster .ph{font-size:28px;opacity:0.35;}
+  .badge{position:absolute;top:8px;left:8px;font-size:10px;font-weight:800;padding:3px 8px;border-radius:999px;letter-spacing:0.5px;}
+  .badge.donghua{background:rgba(232,169,60,0.9);color:#20160a;}
+  .badge.anime{background:rgba(63,191,158,0.9);color:#0a1f1a;}
+  .fav-star{position:absolute;top:8px;right:8px;font-size:15px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.6));}
+  .lock-corner{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.65);width:26px;height:26px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:12px;}
+  .card .meta{padding:10px 10px 12px;}
+  .card .title{font-size:13px;font-weight:700;line-height:1.3;margin:0 0 4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .card .sub{font-size:11px;color:var(--text-2);}
+
+  .empty{text-align:center;padding:60px 20px;color:var(--text-2);}
+  .empty .glyph{font-size:40px;margin-bottom:12px;opacity:0.6;}
+  .empty h3{color:var(--text-1);font-size:15px;margin:0 0 6px;}
+  .empty p{font-size:13px;line-height:1.5;margin:0;}
+
+  .fab{position:fixed;right:20px;bottom:78px;z-index:20;width:56px;height:56px;border-radius:50%;
+    background:linear-gradient(135deg,var(--gold),#c9862a);display:flex;align-items:center;justify-content:center;
+    box-shadow:0 8px 24px rgba(232,169,60,0.35);border:none;cursor:pointer;}
+  .fab-wrap{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;pointer-events:none;max-width:480px;margin:0 auto;}
+  .fab-wrap .fab{pointer-events:auto;}
+
+  .bottomnav{position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;background:rgba(20,16,28,0.92);
+    backdrop-filter:blur(10px);border-top:1px solid var(--line);display:flex;z-index:30;padding-bottom:env(safe-area-inset-bottom);}
+  .navbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 8px;color:var(--text-2);
+    font-size:10px;font-weight:700;cursor:pointer;}
+  .navbtn.active{color:var(--gold);}
+  .navbtn svg{width:20px;height:20px;}
+
+  .screen{position:fixed;inset:0;background:var(--bg-deep);z-index:50;display:none;flex-direction:column;overflow-y:auto;}
+  .screen.show{display:flex;}
+  .screen-inner{max-width:480px;margin:0 auto;width:100%;padding:0 16px 40px;flex:1;}
+  .screen-header{display:flex;align-items:center;gap:12px;padding:20px 0 8px;position:sticky;top:0;background:var(--bg-deep);z-index:5;}
+  .screen-header h2{font-size:16px;margin:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .icon-btn{width:38px;height:38px;border-radius:50%;background:var(--bg-panel);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;color:var(--text-1);cursor:pointer;flex-shrink:0;}
+
+  label{display:block;font-size:12px;font-weight:700;color:var(--text-2);margin:18px 0 8px;text-transform:uppercase;letter-spacing:0.5px;}
+  input[type=text],input[type=url],input[type=number],input[type=date],input[type=email],input[type=password],textarea{
+    width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg-panel);
+    color:var(--text-1);font-family:'Manrope';font-size:14px;outline:none;}
+  input:focus,textarea:focus{border-color:var(--gold);}
+  .seg{display:flex;gap:8px;}
+  .seg button{flex:1;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--bg-panel);
+    color:var(--text-2);font-weight:700;font-size:12px;cursor:pointer;}
+  .seg button.on{border-color:var(--gold);color:var(--gold);background:rgba(232,169,60,0.1);}
+  .filepick{border:1.5px dashed var(--line);border-radius:14px;padding:18px;text-align:center;color:var(--text-2);
+    font-size:13px;cursor:pointer;}
+  .filepick.has-file{border-color:var(--jade);color:var(--jade);}
+  .btn-primary{width:100%;padding:14px;border-radius:14px;border:none;margin-top:22px;
+    background:linear-gradient(135deg,var(--gold),#c9862a);color:#20160a;font-weight:800;font-size:14px;cursor:pointer;}
+  .btn-outline{width:100%;padding:12px;border-radius:14px;border:1px solid var(--line);margin-top:10px;
+    background:transparent;color:var(--text-1);font-weight:700;font-size:13px;cursor:pointer;}
+  .btn-danger{width:100%;padding:12px;border-radius:14px;border:1px solid var(--danger);margin-top:10px;
+    background:transparent;color:var(--danger);font-weight:700;font-size:13px;cursor:pointer;}
+  .hint{font-size:11px;color:var(--text-2);margin-top:6px;line-height:1.5;}
+  .err{font-size:12px;color:var(--danger);margin-top:8px;min-height:16px;}
+
+  .eprow{background:var(--bg-panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;}
+  .eprow-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .eprow-top b{font-size:13px;flex:1;}
+  .eprow .rm{color:var(--danger);font-size:12px;cursor:pointer;font-weight:700;}
+  .costrow{display:flex;align-items:center;gap:8px;margin-top:8px;}
+  .costrow input{flex:1;}
+
+  .ep-list-item{display:flex;align-items:center;gap:12px;background:var(--bg-panel);border:1px solid var(--line);
+    border-radius:14px;padding:12px 14px;margin-bottom:10px;cursor:pointer;}
+  .ep-list-item .epnum{width:38px;height:38px;border-radius:10px;background:var(--bg-panel-2);display:flex;align-items:center;
+    justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;}
+  .ep-list-item .epmain{flex:1;min-width:0;}
+  .ep-list-item .epmain .et{font-size:13px;font-weight:700;}
+  .ep-list-item .epmain .es{font-size:11px;color:var(--text-2);}
+  .ep-list-item .eplock{font-size:16px;flex-shrink:0;}
+  .ep-list-item.locked{opacity:0.75;}
+
+  .detail-banner{width:100%;aspect-ratio:16/9;background:var(--bg-panel-2);background-size:cover;background-position:center;
+    border-radius:16px;margin-bottom:14px;position:relative;}
+  .detail-banner .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:36px;opacity:0.3;}
+
+  .player-screen{background:#000;}
+  .player-screen .screen-header{background:rgba(0,0,0,0.6);}
+  video{width:100%;background:#000;display:block;max-height:52vh;}
+  .player-info{padding:16px 16px 0;}
+  .player-info h2{font-family:'Manrope';font-size:17px;margin:0 0 6px;}
+  .player-info .tag{font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;display:inline-block;margin-bottom:10px;}
+  .player-info p{font-size:13px;color:var(--text-2);line-height:1.6;}
+  .epnav{display:flex;gap:10px;padding:14px 16px 0;}
+  .epnav button{flex:1;padding:11px;border-radius:12px;border:1px solid var(--line);background:var(--bg-panel);
+    color:var(--text-1);font-weight:700;font-size:12.5px;cursor:pointer;}
+  .epnav button:disabled{opacity:0.3;}
+
+  .profile-banner{width:100%;height:140px;background:linear-gradient(135deg,#241c3a,#1a1428);background-size:cover;
+    background-position:center;position:relative;border-radius:0 0 20px 20px;}
+  .profile-banner .editbtn{position:absolute;right:14px;bottom:14px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.3);
+    color:#fff;font-size:11px;font-weight:700;padding:6px 12px;border-radius:999px;cursor:pointer;}
+  .profile-avatar-wrap{display:flex;justify-content:center;margin-top:-46px;position:relative;z-index:2;}
+  .profile-avatar{width:92px;height:92px;border-radius:50%;border:4px solid var(--bg-deep);background:var(--bg-panel);
+    overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;cursor:pointer;position:relative;}
+  .profile-avatar img{width:100%;height:100%;object-fit:cover;}
+  .profile-avatar .camtag{position:absolute;bottom:0;right:0;background:var(--gold);width:28px;height:28px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:13px;border:3px solid var(--bg-deep);}
+  .profile-name-wrap{text-align:center;margin-top:10px;}
+  .profile-name-wrap .nm{font-size:19px;font-weight:800;display:inline-flex;align-items:center;gap:6px;cursor:pointer;}
+  .profile-role-tag{font-size:11px;color:var(--text-2);margin-top:3px;}
+
+  .stat-cards{display:flex;gap:10px;margin:20px 16px 6px;}
+  .stat-card{flex:1;background:var(--bg-panel);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center;}
+  .stat-card .num{font-size:20px;font-weight:800;color:var(--gold);}
+  .stat-card .lbl{font-size:10.5px;color:var(--text-2);margin-top:2px;}
+
+  .plist{margin:18px 16px 0;}
+  .prow{display:flex;align-items:center;justify-content:space-between;background:var(--bg-panel);border:1px solid var(--line);
+    border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer;}
+  .prow .l{font-size:13.5px;font-weight:700;}
+  .prow .r{font-size:12px;color:var(--text-2);}
+
+  .modal-back{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:80;display:none;align-items:flex-end;justify-content:center;}
+  .modal-back.show{display:flex;}
+  .modal-box{background:var(--bg-panel);border-radius:20px 20px 0 0;max-width:480px;width:100%;padding:22px 20px 30px;
+    border-top:1px solid var(--line);}
+  .modal-box h3{margin:0 0 6px;font-size:16px;font-family:'Manrope';font-weight:800;}
+  .modal-box p{font-size:12.5px;color:var(--text-2);margin:0 0 16px;line-height:1.5;}
+  .token-opts{display:flex;gap:8px;margin-bottom:14px;}
+  .token-opts button{flex:1;padding:12px 4px;border-radius:12px;border:1px solid var(--line);background:var(--bg-panel-2);
+    color:var(--text-1);font-weight:700;font-size:12.5px;cursor:pointer;}
+  .token-opts button:hover{border-color:var(--gold);}
+
+  /* Auth screen */
+  #authScreen{align-items:center;justify-content:center;}
+  .auth-box{width:100%;max-width:340px;padding:0 24px;text-align:center;}
+  .auth-box .logo{font-size:26px;margin-bottom:6px;}
+  .auth-box h1{font-size:22px;margin:0 0 4px;}
+  .auth-box .sub{font-size:12.5px;color:var(--text-2);margin-bottom:24px;}
+  .auth-box label{text-align:left;}
+  .auth-toggle{display:flex;gap:8px;margin-top:18px;}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,0,0,0.3);border-top-color:#20160a;border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  ::-webkit-scrollbar{width:0;height:0;}
+</style>
+</head>
+<body>
+
+<!-- ===== AUTH SCREEN ===== -->
+<div class="screen show" id="authScreen">
+  <div class="auth-box">
+    <div class="logo">🎬</div>
+    <h1 id="authTitle">Masuk ke Donghuku</h1>
+    <div class="sub">Nonton koleksi anime & donghua kamu, tersimpan di cloud.</div>
+    <label>Email</label>
+    <input type="email" id="authEmail" placeholder="email@kamu.com">
+    <label>Kata Sandi</label>
+    <input type="password" id="authPass" placeholder="Minimal 6 karakter">
+    <div class="err" id="authErr"></div>
+    <button class="btn-primary" id="authSubmitBtn" onclick="submitAuth()">Masuk</button>
+    <div class="auth-toggle">
+      <button class="btn-outline" id="authToggleBtn" onclick="toggleAuthMode()" style="margin-top:0;">Belum punya akun? Daftar</button>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="mainApp" style="display:none;">
+
+  <!-- ===== HOME VIEW ===== -->
+  <div class="view" id="view-home">
+    <div class="topbar">
+      <div class="avatar-sm" id="topAvatar" onclick="goto('profil')"></div>
+      <div class="greet">
+        <div class="hi">Halo,</div>
+        <div class="nm" id="topName">Pengguna <span class="badge-inline" id="topBadge" style="display:none;"></span></div>
+      </div>
+      <div class="icon-btn" title="Pengumuman" onclick="alert(announcementText)">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </div>
+      <div class="icon-btn" title="Cari" onclick="goto('katalog');document.getElementById('searchInput').focus();">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      </div>
+    </div>
+
+    <div class="hero" id="hero"></div>
+
+    <div class="announce"><b>Pengumuman:</b> <span id="announceInline"></span></div>
+
+    <div class="sec-head"><h2>Genre</h2></div>
+    <div class="chiprow">
+      <div class="chip" onclick="goto('katalog','all')">Semua</div>
+      <div class="chip" onclick="goto('katalog','donghua')">Donghua</div>
+      <div class="chip" onclick="goto('katalog','anime')">Anime</div>
+      <div class="chip" onclick="goto('koleksi')">Favorit</div>
+    </div>
+
+    <div class="sec-head"><h2>Lanjutkan Nonton</h2><span class="link" onclick="goto('koleksi')">Lihat Semua ›</span></div>
+    <div class="cwrow" id="cwRow"></div>
+  </div>
+
+  <!-- ===== JADWAL VIEW ===== -->
+  <div class="view" id="view-jadwal" hidden>
+    <div class="topbar"><h2 style="margin:0;">Jadwal Update</h2></div>
+    <div id="jadwalList" style="padding:0 16px;"></div>
+  </div>
+
+  <!-- ===== KATALOG VIEW ===== -->
+  <div class="view" id="view-katalog" hidden>
+    <div class="topbar"><h2 style="margin:0;">Katalog</h2></div>
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9c93a8" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" id="searchInput" placeholder="Cari judul anime atau donghua...">
+    </div>
+    <div class="tabs">
+      <div class="tab active" data-cat="all">Semua</div>
+      <div class="tab" data-cat="anime">Anime</div>
+      <div class="tab" data-cat="donghua">Donghua</div>
+    </div>
+    <div id="katalogGrid" class="grid"></div>
+    <div id="katalogEmpty" class="empty" style="display:none;">
+      <div class="glyph">🎬</div><h3>Belum ada tontonan</h3>
+      <p id="katalogEmptyHint">Owner belum menambahkan judul.</p>
+    </div>
+  </div>
+
+  <!-- ===== KOLEKSI VIEW ===== -->
+  <div class="view" id="view-koleksi" hidden>
+    <div class="topbar"><h2 style="margin:0;">Koleksi Saya</h2></div>
+    <div class="sec-head"><h2>Lanjutkan Nonton</h2></div>
+    <div class="cwrow" id="cwRow2" style="margin-bottom:26px;"></div>
+    <div class="sec-head"><h2>Favorit</h2></div>
+    <div id="koleksiGrid" class="grid"></div>
+    <div id="koleksiEmpty" class="empty" style="display:none;">
+      <div class="glyph">⭐</div><h3>Belum ada favorit</h3>
+      <p>Tandai bintang di judul untuk<br>menyimpannya di sini.</p>
+    </div>
+  </div>
+
+  <!-- ===== PROFIL VIEW ===== -->
+  <div class="view" id="view-profil" hidden style="padding:0;">
+    <div class="profile-banner" id="profBanner">
+      <div class="editbtn" onclick="document.getElementById('bannerFile').click()">Ganti Sampul</div>
+      <input type="file" id="bannerFile" accept="image/*" style="display:none;">
+    </div>
+    <div class="profile-avatar-wrap">
+      <div class="profile-avatar" id="profAvatar" onclick="document.getElementById('avatarFile').click()">
+        <span id="profAvatarInit"></span>
+        <div class="camtag">📷</div>
+      </div>
+      <input type="file" id="avatarFile" accept="image/*" style="display:none;">
+    </div>
+    <div class="profile-name-wrap">
+      <div class="nm" id="profName" onclick="editName()">Pengguna <span class="badge-inline" id="profBadge" style="display:none;"></span> ✎</div>
+      <div class="profile-role-tag" id="profRoleTag"></div>
+    </div>
+
+    <div class="stat-cards">
+      <div class="stat-card"><div class="num" id="statTokens">0</div><div class="lbl">Token</div></div>
+      <div class="stat-card"><div class="num" id="statTitles">0</div><div class="lbl">Judul di Katalog</div></div>
+      <div class="stat-card"><div class="num" id="statFav">0</div><div class="lbl">Favorit</div></div>
+    </div>
+
+    <div class="plist">
+      <div class="prow" onclick="openModal('topup')"><span class="l">💰 Isi Token</span><span class="r">›</span></div>
+      <div class="prow" id="vipRow" onclick="openModal('vip')"><span class="l">✔️ Aktifkan VIP</span><span class="r">›</span></div>
+      <div class="prow" onclick="exportData()"><span class="l">⬇️ Ekspor Data (cadangan)</span><span class="r">›</span></div>
+      <div class="prow" onclick="doLogout()"><span class="l" style="color:var(--danger);">🚪 Keluar Akun</span><span class="r">›</span></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="fab-wrap"><button class="fab" id="addFab" onclick="openAddScreen()" style="display:none;">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#20160a" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+</button></div>
+
+<nav class="bottomnav" id="bottomnav" style="display:none;">
+  <div class="navbtn active" data-view="home" onclick="goto('home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg>Home</div>
+  <div class="navbtn" data-view="jadwal" onclick="goto('jadwal')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Jadwal</div>
+  <div class="navbtn" data-view="katalog" onclick="goto('katalog')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Katalog</div>
+  <div class="navbtn" data-view="koleksi" onclick="goto('koleksi')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Koleksi</div>
+  <div class="navbtn" data-view="profil" onclick="goto('profil')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Profil</div>
+</nav>
+
+<!-- ===== DETAIL SCREEN ===== -->
+<div class="screen" id="detailScreen">
+  <div class="screen-inner">
+    <div class="screen-header">
+      <div class="icon-btn" onclick="closeScreen('detailScreen')">✕</div>
+      <h2 id="dTitle"></h2>
+      <div class="icon-btn" id="dFav" onclick="toggleFavorite()">☆</div>
+      <div class="icon-btn" id="dEditBtn" style="display:none;" onclick="openAddScreen(currentDetailId)">✎</div>
+    </div>
+    <div class="detail-banner" id="dBanner"><div class="ph">🎞</div></div>
+    <span class="badge" id="dCatBadge" style="position:static;display:inline-block;margin-bottom:10px;"></span>
+    <p style="font-size:13px;color:var(--text-2);line-height:1.6;margin:0 0 18px;" id="dDesc"></p>
+    <label style="margin-top:0;">Episode</label>
+    <div id="epListWrap"></div>
+  </div>
+</div>
+
+<!-- ===== ADD/EDIT SCREEN (Owner only) ===== -->
+<div class="screen" id="addScreen">
+  <div class="screen-inner">
+    <div class="screen-header">
+      <div class="icon-btn" onclick="closeScreen('addScreen')">✕</div>
+      <h2 id="addScreenTitle">Tambah Judul</h2>
+    </div>
+
+    <label>Judul</label>
+    <input type="text" id="fTitle" placeholder="cth. Perfect World S2">
+
+    <label>Kategori</label>
+    <div class="seg"><button type="button" class="on" data-val="anime" id="segAnime">Anime</button><button type="button" data-val="donghua" id="segDonghua">Donghua</button></div>
+
+    <label>Poster (link gambar, opsional)</label>
+    <input type="url" id="fPoster" placeholder="https://...">
+
+    <label>Banner/Sampul (link gambar, opsional)</label>
+    <input type="url" id="fBanner" placeholder="https://...">
+
+    <label>Deskripsi singkat</label>
+    <textarea id="fDesc" rows="2" placeholder="Sinopsis singkat"></textarea>
+
+    <label>Tanggal Update Berikutnya (opsional)</label>
+    <input type="date" id="fNextDate">
+
+    <label>Episode</label>
+    <div id="epFormList"></div>
+    <button type="button" class="btn-outline" onclick="addEpisodeRow()">+ Tambah Episode</button>
+    <p class="hint">⚠️ Karena katalog ini kebagi ke semua akun lewat cloud, opsi "Upload File" cuma bisa diputar di HP kamu sendiri saat ini juga. Kalau mau semua akun bisa nonton, pakai "Link .mp4" dari hosting/cloud storage kamu.</p>
+
+    <button class="btn-primary" id="saveBtn" onclick="saveTitle()">Simpan</button>
+    <button class="btn-danger" id="deleteTitleBtn" style="display:none;" onclick="deleteTitle()">Hapus Judul Ini</button>
+  </div>
+</div>
+
+<!-- ===== PLAYER SCREEN ===== -->
+<div class="screen player-screen" id="playerScreen">
+  <div class="screen-inner" style="padding:0;">
+    <div class="screen-header" style="padding:16px;">
+      <div class="icon-btn" onclick="closeScreen('playerScreen')">✕</div>
+      <h2 id="pTitle" style="color:#fff;"></h2>
+    </div>
+    <video id="videoEl" controls playsinline></video>
+    <div class="epnav">
+      <button id="prevEpBtn" onclick="playAdjacentEp(-1)">‹ Sebelumnya</button>
+      <button id="nextEpBtn" onclick="playAdjacentEp(1)">Selanjutnya ›</button>
+    </div>
+    <div class="player-info">
+      <span class="tag" id="pTag"></span>
+      <p id="pDesc"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODALS ===== -->
+<div class="modal-back" id="modalBack">
+  <div class="modal-box" id="modalBox"></div>
+</div>
+
+<script>
+/* ---------- FIREBASE ---------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyBAuYXS1qaq7JKDa6xDPdg5zRAAowtoJPA",
+  authDomain: "donghuku.firebaseapp.com",
+  projectId: "donghuku",
+  storageBucket: "donghuku.firebasestorage.app",
+  messagingSenderId: "791669051431",
+  appId: "1:791669051431:web:f5f3853f8e636f414f7e02",
+  measurementId: "G-18GHRE007D"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const OWNER_EMAIL = "deriszmaulana@gmail.com";
+
+/* ---------- STATE ---------- */
+let profile = null;   // synced from users/{uid}
+let library = [];     // synced from titles collection
+let unsubUser = null, unsubTitles = null;
+let currentFilter='all', currentSearch='';
+let currentDetailId=null, currentPlayingTitleId=null, currentPlayingEpId=null;
+let epFormArr = [];
+let editingTitleId = null;
+let authMode = 'login';
+const announcementText = "Selamat datang di Donghuku. Owner bakal terus nambahin judul baru di katalog 🎬";
+document.getElementById('announceInline').textContent = announcementText;
+
+/* ---------- AUTH ---------- */
+function toggleAuthMode(){
+  authMode = authMode==='login' ? 'register' : 'login';
+  document.getElementById('authTitle').textContent = authMode==='login' ? 'Masuk ke Donghuku' : 'Daftar Akun Donghuku';
+  document.getElementById('authSubmitBtn').textContent = authMode==='login' ? 'Masuk' : 'Daftar';
+  document.getElementById('authToggleBtn').textContent = authMode==='login' ? 'Belum punya akun? Daftar' : 'Sudah punya akun? Masuk';
+  document.getElementById('authErr').textContent = '';
+}
+async function submitAuth(){
+  const email = document.getElementById('authEmail').value.trim();
+  const pass = document.getElementById('authPass').value;
+  const errEl = document.getElementById('authErr');
+  errEl.textContent = '';
+  if(!email || !pass){ errEl.textContent = 'Isi email dan kata sandi dulu.'; return; }
+  const btn = document.getElementById('authSubmitBtn');
+  btn.disabled = true; const orig = btn.textContent; btn.innerHTML = '<span class="spinner"></span>';
+  try{
+    if(authMode==='login'){
+      await auth.signInWithEmailAndPassword(email, pass);
+    } else {
+      await auth.createUserWithEmailAndPassword(email, pass);
+    }
+  }catch(e){
+    errEl.textContent = translateAuthError(e.code) || e.message;
+  }finally{
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+function translateAuthError(code){
+  const map = {
+    'auth/email-already-in-use':'Email ini sudah terdaftar. Coba Masuk.',
+    'auth/invalid-email':'Format email tidak valid.',
+    'auth/weak-password':'Kata sandi minimal 6 karakter.',
+    'auth/user-not-found':'Akun tidak ditemukan. Coba Daftar.',
+    'auth/wrong-password':'Kata sandi salah.',
+    'auth/invalid-credential':'Email atau kata sandi salah.',
+    'auth/too-many-requests':'Terlalu banyak percobaan. Coba lagi nanti.'
+  };
+  return map[code];
+}
+function doLogout(){
+  if(!confirm('Yakin mau keluar akun?')) return;
+  auth.signOut();
+}
+
+auth.onAuthStateChanged(async user=>{
+  if(user){
+    document.getElementById('authScreen').classList.remove('show');
+    document.getElementById('mainApp').style.display = 'block';
+    document.getElementById('bottomnav').style.display = 'flex';
+    try{
+      await ensureUserDoc(user);
+    }catch(e){
+      console.error('ensureUserDoc failed:', e);
+      alert('Gagal memuat/menyimpan data akun kamu.\n\nKemungkinan Firestore Rules belum di-Publish di Firebase Console. Buka Firestore Database → Rules, tempel ulang aturannya, lalu klik Publish.\n\nDetail error: '+e.message);
+    }
+    subscribeUser(user.uid);
+    subscribeTitles();
+  } else {
+    if(unsubUser) unsubUser();
+    if(unsubTitles) unsubTitles();
+    profile = null; library = [];
+    document.getElementById('mainApp').style.display = 'none';
+    document.getElementById('bottomnav').style.display = 'none';
+    document.getElementById('addFab').style.display = 'none';
+    document.getElementById('authScreen').classList.add('show');
+  }
+});
+
+async function ensureUserDoc(user){
+  const ref = db.collection('users').doc(user.uid);
+  const snap = await ref.get();
+  if(!snap.exists){
+    await ref.set({
+      name: user.email.split('@')[0],
+      avatar:'', banner:'',
+      role: user.email===OWNER_EMAIL ? 'owner' : 'free',
+      tokens: 20, vipUntil: 0,
+      favorites: [], unlocked: [], progress: {},
+      email: user.email
+    });
+  } else if(user.email===OWNER_EMAIL && snap.data().role!=='owner'){
+    await ref.update({role:'owner'});
+  }
+}
+function subscribeUser(uid){
+  if(unsubUser) unsubUser();
+  unsubUser = db.collection('users').doc(uid).onSnapshot(snap=>{
+    if(!snap.exists) return;
+    profile = snap.data();
+    profile.uid = uid;
+    if(!profile.favorites) profile.favorites=[];
+    if(!profile.unlocked) profile.unlocked=[];
+    if(!profile.progress) profile.progress={};
+    renderAll();
+  }, err=>{
+    console.error('subscribeUser failed:', err);
+    alert('Gagal memuat data akun (izin ditolak).\n\nPastikan Firestore Rules sudah di-Publish di Firebase Console sesuai file firestore.rules.\n\nDetail: '+err.message);
+  });
+}
+function subscribeTitles(){
+  if(unsubTitles) unsubTitles();
+  unsubTitles = db.collection('titles').orderBy('createdAt','desc').onSnapshot(snap=>{
+    library = snap.docs.map(d=>Object.assign({id:d.id}, d.data()));
+    renderAll();
+  }, err=>{
+    console.error('subscribeTitles failed:', err);
+    alert('Gagal memuat katalog (izin ditolak).\n\nPastikan Firestore Rules sudah di-Publish di Firebase Console.\n\nDetail: '+err.message);
+  });
+}
+function saveProfile(){
+  if(!profile) return;
+  const {uid, ...data} = profile;
+  db.collection('users').doc(uid).set(data, {merge:true}).catch(e=>console.error(e));
+}
+function renderAll(){
+  if(!profile) return;
+  const isOwner = effectiveRole()==='owner';
+  document.getElementById('addFab').style.display = isOwner ? 'flex' : 'none';
+  document.getElementById('katalogEmptyHint').textContent = isOwner
+    ? 'Ketuk tombol + di kanan bawah untuk menambahkan judul pertamamu.'
+    : 'Owner belum menambahkan judul. Coba lagi nanti.';
+  renderHome(); renderKatalog(); renderKoleksi(); renderProfil(); renderJadwal();
+}
+
+/* ---------- HELPERS ---------- */
+function esc(str){ const d=document.createElement('div'); d.textContent=str||''; return d.innerHTML; }
+function isVipActive(){ return profile.role==='vip' && profile.vipUntil > Date.now(); }
+function effectiveRole(){ if(profile.role==='owner') return 'owner'; if(isVipActive()) return 'vip'; return 'free'; }
+function hasAccess(ep){ const r=effectiveRole(); if(r==='owner'||r==='vip') return true; return !ep.cost || (profile.unlocked||[]).includes(ep.id); }
+function isFavorite(titleId){ return (profile.favorites||[]).includes(titleId); }
+function resizeImage(file, maxDim){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const img = new Image();
+      img.onload = ()=>{
+        let w=img.width, h=img.height;
+        if(w>h){ if(w>maxDim){ h=Math.round(h*maxDim/w); w=maxDim; } }
+        else { if(h>maxDim){ w=Math.round(w*maxDim/h); h=maxDim; } }
+        const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',0.72));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ---------- NAV ---------- */
+function goto(view, sub){
+  document.querySelectorAll('.view').forEach(v=>v.hidden = (v.id!=='view-'+view));
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
+  if(view==='katalog'){ if(sub) setKatalogTab(sub); renderKatalog(); }
+  if(view==='home') renderHome();
+  if(view==='jadwal') renderJadwal();
+  if(view==='koleksi') renderKoleksi();
+  if(view==='profil') renderProfil();
+}
+
+/* ---------- HOME ---------- */
+function badgeHtml(){
+  const r = effectiveRole();
+  if(r==='owner') return `<span class="badge-inline owner">👑 OWNER</span>`;
+  if(r==='vip') return `<span class="badge-inline vip">✔ VIP</span>`;
+  return '';
+}
+function renderHome(){
+  document.getElementById('topName').innerHTML = esc(profile.name) + ' ' + badgeHtml();
+  document.getElementById('topAvatar').innerHTML = profile.avatar ? `<img src="${profile.avatar}">` : (profile.name[0]||'U').toUpperCase();
+
+  const hero = document.getElementById('hero');
+  const featured = library.slice(0,6);
+  if(featured.length===0){
+    hero.innerHTML = `<div class="hero-empty"><div style="font-size:30px;">🎬</div>Belum ada judul unggulan.</div>`;
+  } else {
+    hero.innerHTML = featured.map((it,i)=>`
+      <div class="hero-slide ${i===0?'on':''}" data-i="${i}" style="${(it.banner||it.poster)?`background-image:url('${it.banner||it.poster}')`:''}">
+        <div class="hero-txt">
+          <span class="tag ${it.cat}">${it.cat==='donghua'?'DONGHUA':'ANIME'}</span>
+          <h3>${esc(it.title)}</h3>
+          <p>${esc(it.desc||'')||('Total '+(it.episodes||[]).length+' episode')}</p>
+        </div>
+      </div>`).join('') + `<div class="dots">${featured.map((_,i)=>`<div class="dot ${i===0?'on':''}"></div>`).join('')}</div>`;
+    hero.querySelectorAll('.hero-slide').forEach(s=>s.onclick=()=>openDetail(featured[+s.dataset.i].id));
+    startHeroRotate(featured.length);
+  }
+  renderContinueRow('cwRow');
+}
+let heroTimer=null, heroIdx=0;
+function startHeroRotate(n){
+  clearInterval(heroTimer); heroIdx=0;
+  if(n<2) return;
+  heroTimer = setInterval(()=>{
+    heroIdx = (heroIdx+1)%n;
+    document.querySelectorAll('.hero-slide').forEach(s=>s.classList.toggle('on', +s.dataset.i===heroIdx));
+    document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('on', i===heroIdx));
+  }, 4500);
+}
+function allContinueItems(){
+  const out=[];
+  const prog = profile.progress || {};
+  library.forEach(t=>(t.episodes||[]).forEach(ep=>{
+    const p = prog[ep.id];
+    if(p && p.progress>0 && p.duration>0 && p.progress < p.duration*0.97){
+      out.push({t, ep, p});
+    }
+  }));
+  return out.sort((a,b)=> (b.p.lastPlayed||0)-(a.p.lastPlayed||0));
+}
+function renderContinueRow(elId){
+  const el = document.getElementById(elId);
+  const items = allContinueItems();
+  if(items.length===0){ el.innerHTML = `<p style="color:var(--text-2);font-size:12.5px;padding:0 4px;">Belum ada tontonan yang sedang berjalan.</p>`; return; }
+  el.innerHTML = items.map(({t,ep,p})=>{
+    const pct = p.duration ? Math.min(100,(p.progress/p.duration)*100) : 0;
+    return `<div class="cwcard" onclick="playEpisode('${t.id}','${ep.id}')">
+      <div class="thumb" style="${t.poster?`background-image:url('${t.poster}')`:''}">
+        <span class="ep-pill">Episode ${ep.num}</span>
+        <div class="cwprog" style="width:${pct}%"></div>
+      </div>
+      <div class="t">${esc(t.title)}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- JADWAL ---------- */
+function renderJadwal(){
+  const el = document.getElementById('jadwalList');
+  const items = library.filter(t=>t.nextEpDate).sort((a,b)=> a.nextEpDate.localeCompare(b.nextEpDate));
+  if(items.length===0){
+    el.innerHTML = `<div class="empty"><div class="glyph">🗓</div><h3>Belum ada jadwal</h3><p>Owner belum mengisi tanggal update episode berikutnya.</p></div>`;
+    return;
+  }
+  el.innerHTML = items.map(t=>`
+    <div class="prow" onclick="openDetail('${t.id}')">
+      <span class="l">${esc(t.title)}</span>
+      <span class="r">${t.nextEpDate}</span>
+    </div>`).join('');
+}
+
+/* ---------- KATALOG ---------- */
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{ setKatalogTab(tab.dataset.cat); renderKatalog(); });
+});
+function setKatalogTab(cat){
+  currentFilter = cat;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.cat===cat));
+}
+document.getElementById('searchInput').addEventListener('input', e=>{ currentSearch = e.target.value; renderKatalog(); });
+
+function cardHtml(item){
+  const nextLockedEp = (item.episodes||[]).find(ep=>!hasAccess(ep));
+  return `<div class="card" onclick="openDetail('${item.id}')">
+    <div class="poster" style="${item.poster?`background-image:url('${item.poster}')`:''}">
+      ${!item.poster ? '<div class="ph">🎞</div>' : ''}
+      <span class="badge ${item.cat}">${item.cat==='donghua'?'DONGHUA':'ANIME'}</span>
+      <span class="fav-star">${isFavorite(item.id)?'⭐':''}</span>
+      ${nextLockedEp ? '<div class="lock-corner">🔒</div>' : ''}
+    </div>
+    <div class="meta">
+      <p class="title">${esc(item.title)}</p>
+      <p class="sub">${(item.episodes||[]).length} Episode</p>
+    </div>
+  </div>`;
+}
+function renderKatalog(){
+  const filtered = library.filter(item=>{
+    const catOk = currentFilter==='all' || item.cat===currentFilter;
+    const searchOk = item.title.toLowerCase().includes(currentSearch.toLowerCase());
+    return catOk && searchOk;
+  });
+  const grid = document.getElementById('katalogGrid');
+  const empty = document.getElementById('katalogEmpty');
+  if(filtered.length===0){ grid.style.display='none'; empty.style.display='block'; return; }
+  grid.style.display='grid'; empty.style.display='none';
+  grid.innerHTML = filtered.map(cardHtml).join('');
+}
+
+/* ---------- KOLEKSI ---------- */
+function renderKoleksi(){
+  renderContinueRow('cwRow2');
+  const favs = library.filter(t=>isFavorite(t.id));
+  const grid = document.getElementById('koleksiGrid');
+  const empty = document.getElementById('koleksiEmpty');
+  if(favs.length===0){ grid.style.display='none'; empty.style.display='block'; return; }
+  grid.style.display='grid'; empty.style.display='none';
+  grid.innerHTML = favs.map(cardHtml).join('');
+}
+
+/* ---------- DETAIL ---------- */
+function openDetail(id){
+  const t = library.find(x=>x.id===id);
+  if(!t) return;
+  currentDetailId = id;
+  document.getElementById('dTitle').textContent = t.title;
+  document.getElementById('dBanner').style.backgroundImage = (t.banner||t.poster) ? `url('${t.banner||t.poster}')` : '';
+  document.getElementById('dBanner').querySelector('.ph').style.display = (t.banner||t.poster) ? 'none':'flex';
+  const catB = document.getElementById('dCatBadge');
+  catB.textContent = t.cat==='donghua'?'DONGHUA':'ANIME';
+  catB.className = 'badge '+t.cat;
+  document.getElementById('dDesc').textContent = t.desc || 'Belum ada deskripsi.';
+  document.getElementById('dFav').textContent = isFavorite(id) ? '★' : '☆';
+  document.getElementById('dFav').style.color = isFavorite(id) ? 'var(--gold)' : 'var(--text-1)';
+  document.getElementById('dEditBtn').style.display = effectiveRole()==='owner' ? 'flex' : 'none';
+
+  const wrap = document.getElementById('epListWrap');
+  wrap.innerHTML = (t.episodes||[]).map(ep=>{
+    const access = hasAccess(ep);
+    const unlocked = (profile.unlocked||[]).includes(ep.id);
+    return `<div class="ep-list-item ${access?'':'locked'}" onclick="handleEpisodeTap('${t.id}','${ep.id}')">
+      <div class="epnum">${ep.num}</div>
+      <div class="epmain">
+        <div class="et">Episode ${ep.num}</div>
+        <div class="es">${ep.cost>0 ? (unlocked?'Sudah dibuka':(ep.cost+' Token')) : 'Gratis'}</div>
+      </div>
+      <div class="eplock">${access ? '▶️' : '🔒'}</div>
+    </div>`;
+  }).join('') || '<p style="color:var(--text-2);font-size:13px;">Belum ada episode ditambahkan.</p>';
+
+  document.getElementById('detailScreen').classList.add('show');
+}
+function toggleFavorite(){
+  if(!profile.favorites) profile.favorites=[];
+  const idx = profile.favorites.indexOf(currentDetailId);
+  if(idx>=0) profile.favorites.splice(idx,1); else profile.favorites.push(currentDetailId);
+  saveProfile();
+  document.getElementById('dFav').textContent = isFavorite(currentDetailId) ? '★' : '☆';
+  document.getElementById('dFav').style.color = isFavorite(currentDetailId) ? 'var(--gold)' : 'var(--text-1)';
+}
+function handleEpisodeTap(titleId, epId){
+  const t = library.find(x=>x.id===titleId); const ep = t.episodes.find(e=>e.id===epId);
+  if(hasAccess(ep)){ playEpisode(titleId, epId); return; }
+  openUnlockModal(titleId, epId);
+}
+
+/* ---------- UNLOCK MODAL ---------- */
+function openUnlockModal(titleId, epId){
+  const t = library.find(x=>x.id===titleId); const ep = t.episodes.find(e=>e.id===epId);
+  const box = document.getElementById('modalBox');
+  box.innerHTML = `
+    <h3>🔒 Episode ${ep.num} Terkunci</h3>
+    <p>Butuh <b style="color:var(--gold)">${ep.cost} Token</b> untuk membuka episode ini secara permanen. Token kamu saat ini: <b>${profile.tokens}</b>.</p>
+    <button class="btn-primary" onclick="unlockEpisode('${titleId}','${epId}')">Buka dengan ${ep.cost} Token</button>
+    <button class="btn-outline" onclick="closeModal();openModal('vip')">Atau, Aktifkan VIP (bebas semua episode)</button>
+  `;
+  openModalRaw();
+}
+function unlockEpisode(titleId, epId){
+  const t = library.find(x=>x.id===titleId); const ep = t.episodes.find(e=>e.id===epId);
+  if(profile.tokens < ep.cost){ alert('Token kamu tidak cukup. Isi token dulu ya.'); closeModal(); openModal('topup'); return; }
+  profile.tokens -= ep.cost;
+  if(!profile.unlocked) profile.unlocked=[];
+  profile.unlocked.push(ep.id);
+  saveProfile(); closeModal();
+  openDetail(titleId);
+}
+
+/* ---------- TOPUP / VIP MODALS ---------- */
+function openModal(kind){
+  const box = document.getElementById('modalBox');
+  if(kind==='topup'){
+    box.innerHTML = `
+      <h3>💰 Isi Token</h3>
+      <p>Simulasi lokal — token langsung ditambahkan ke akun kamu, tidak ada transaksi nyata.</p>
+      <div class="token-opts">
+        <button onclick="addTokens(10)">+10</button>
+        <button onclick="addTokens(50)">+50</button>
+        <button onclick="addTokens(100)">+100</button>
+      </div>
+      <button class="btn-outline" onclick="closeModal()">Tutup</button>`;
+  } else if(kind==='vip'){
+    const active = isVipActive();
+    box.innerHTML = `
+      <h3>✔️ ${active?'VIP Aktif':'Aktifkan VIP'}</h3>
+      <p>${active ? 'VIP kamu aktif sampai '+new Date(profile.vipUntil).toLocaleDateString('id-ID')+'.' : 'Buka semua episode tanpa token, dapat centang biru di nama kamu. (Simulasi lokal, 30 hari)'}</p>
+      <button class="btn-primary" onclick="activateVip()">${active?'Perpanjang 30 Hari':'Aktifkan 30 Hari'}</button>
+      <button class="btn-outline" onclick="closeModal()">Tutup</button>`;
+  }
+  openModalRaw();
+}
+function openModalRaw(){ document.getElementById('modalBack').classList.add('show'); }
+function closeModal(){ document.getElementById('modalBack').classList.remove('show'); }
+document.getElementById('modalBack').addEventListener('click', e=>{ if(e.target.id==='modalBack') closeModal(); });
+function addTokens(n){ profile.tokens += n; saveProfile(); closeModal(); }
+function activateVip(){
+  profile.role = profile.role==='owner' ? 'owner' : 'vip';
+  profile.vipUntil = Math.max(profile.vipUntil||0, Date.now()) + 30*24*60*60*1000;
+  saveProfile(); closeModal();
+}
+
+/* ---------- PROFIL ---------- */
+function renderProfil(){
+  document.getElementById('profBanner').style.backgroundImage = profile.banner ? `url('${profile.banner}')` : '';
+  document.getElementById('profAvatarInit').textContent = profile.avatar ? '' : (profile.name[0]||'U').toUpperCase();
+  const av = document.getElementById('profAvatar');
+  av.querySelectorAll('img').forEach(i=>i.remove());
+  if(profile.avatar){ const img=document.createElement('img'); img.src=profile.avatar; av.prepend(img); }
+  document.getElementById('profName').innerHTML = esc(profile.name) + ' ' + badgeHtml() + ' ✎';
+  const r = effectiveRole();
+  document.getElementById('profRoleTag').textContent = r==='owner' ? 'Pemilik Aplikasi · '+profile.email : (r==='vip' ? 'Member VIP · aktif sampai '+new Date(profile.vipUntil).toLocaleDateString('id-ID') : 'Pengguna Gratis · '+profile.email);
+  document.getElementById('statTokens').textContent = profile.tokens;
+  document.getElementById('statTitles').textContent = library.length;
+  document.getElementById('statFav').textContent = (profile.favorites||[]).length;
+  document.getElementById('vipRow').style.display = (r==='owner') ? 'none' : 'flex';
+}
+function editName(){
+  if(!profile){ alert('Data akun belum termuat. Coba tutup dan buka lagi appnya.'); return; }
+  const n = prompt('Nama tampilan:', profile.name);
+  if(n && n.trim()){ profile.name = n.trim(); saveProfile(); }
+}
+document.getElementById('avatarFile').addEventListener('change', async e=>{
+  const f = e.target.files[0]; if(!f) return;
+  if(!profile){ alert('Data akun belum termuat. Coba tutup dan buka lagi appnya.'); return; }
+  profile.avatar = await resizeImage(f, 300);
+  saveProfile();
+});
+document.getElementById('bannerFile').addEventListener('change', async e=>{
+  const f = e.target.files[0]; if(!f) return;
+  if(!profile){ alert('Data akun belum termuat. Coba tutup dan buka lagi appnya.'); return; }
+  profile.banner = await resizeImage(f, 700);
+  saveProfile();
+});
+function exportData(){
+  const blob = new Blob([JSON.stringify({profile,library},null,2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'donghuku-backup.json'; a.click();
+}
+
+/* ---------- ADD / EDIT TITLE (Owner only, enforced by Firestore rules) ---------- */
+function openAddScreen(editId){
+  if(effectiveRole()!=='owner'){ alert('Cuma Owner yang bisa menambah/mengedit judul.'); return; }
+  editingTitleId = editId || null;
+  const t = editId ? library.find(x=>x.id===editId) : null;
+  document.getElementById('addScreenTitle').textContent = t ? 'Edit Judul' : 'Tambah Judul';
+  document.getElementById('deleteTitleBtn').style.display = t ? 'block' : 'none';
+  document.getElementById('fTitle').value = t ? t.title : '';
+  document.getElementById('fPoster').value = t ? (t.poster||'') : '';
+  document.getElementById('fBanner').value = t ? (t.banner||'') : '';
+  document.getElementById('fDesc').value = t ? (t.desc||'') : '';
+  document.getElementById('fNextDate').value = t ? (t.nextEpDate||'') : '';
+  setSeg('segAnime','segDonghua', t && t.cat==='donghua' ? 'segDonghua':'segAnime');
+  epFormArr = t ? JSON.parse(JSON.stringify(t.episodes||[])) : [];
+  if(epFormArr.length===0) addEpisodeRow();
+  else renderEpForm();
+  document.getElementById('detailScreen').classList.remove('show');
+  document.getElementById('addScreen').classList.add('show');
+}
+function setSeg(idA, idB, activeId){
+  document.getElementById(idA).classList.toggle('on', idA===activeId);
+  document.getElementById(idB).classList.toggle('on', idB===activeId);
+}
+document.getElementById('segAnime').onclick = ()=> setSeg('segAnime','segDonghua','segAnime');
+document.getElementById('segDonghua').onclick = ()=> setSeg('segAnime','segDonghua','segDonghua');
+
+function addEpisodeRow(){
+  const nextNum = epFormArr.length ? Math.max(...epFormArr.map(e=>e.num))+1 : 1;
+  epFormArr.push({id:'ep'+Date.now()+Math.random().toString(36).slice(2,6), num:nextNum, sourceType:'url', videoSrc:'', cost:0});
+  renderEpForm();
+}
+function removeEpisodeRow(idx){ epFormArr.splice(idx,1); renderEpForm(); }
+function renderEpForm(){
+  const wrap = document.getElementById('epFormList');
+  wrap.innerHTML = epFormArr.map((ep,idx)=>`
+    <div class="eprow">
+      <div class="eprow-top">
+        <b>Episode <input type="number" min="1" style="width:56px;display:inline-block;padding:4px 6px;" value="${ep.num}" onchange="epFormArr[${idx}].num=+this.value"></b>
+        <span class="rm" onclick="removeEpisodeRow(${idx})">Hapus</span>
+      </div>
+      <div class="seg" style="margin-bottom:8px;">
+        <button type="button" class="${ep.sourceType==='url'?'on':''}" onclick="setEpSource(${idx},'url')">Link .mp4</button>
+        <button type="button" class="${ep.sourceType==='file'?'on':''}" onclick="setEpSource(${idx},'file')">Upload File</button>
+      </div>
+      ${ep.sourceType==='url'
+        ? `<input type="url" placeholder="https://.../ep${ep.num}.mp4" value="${ep.videoSrc.startsWith('blob:')?'':esc(ep.videoSrc)}" onchange="epFormArr[${idx}].videoSrc=this.value">`
+        : `<div class="filepick ${ep.videoSrc?'has-file':''}" onclick="document.getElementById('epfile${idx}').click()">${ep.videoSrc?'✅ File terpilih (lokal)':'📁 Ketuk untuk pilih file video'}</div>
+           <input type="file" id="epfile${idx}" accept="video/*" style="display:none;" onchange="handleEpFile(${idx},this)">`
+      }
+      <div class="costrow">
+        <label style="margin:0;font-size:11px;">Biaya token</label>
+        <input type="number" min="0" value="${ep.cost}" onchange="epFormArr[${idx}].cost=+this.value" style="max-width:90px;">
+        <span style="font-size:11px;color:var(--text-2);">0 = gratis</span>
+      </div>
+    </div>`).join('');
+}
+function setEpSource(idx, type){ epFormArr[idx].sourceType = type; renderEpForm(); }
+function handleEpFile(idx, input){
+  const f = input.files[0]; if(!f) return;
+  epFormArr[idx].videoSrc = URL.createObjectURL(f);
+  renderEpForm();
+}
+async function saveTitle(){
+  const title = document.getElementById('fTitle').value.trim();
+  if(!title){ alert('Judul wajib diisi.'); return; }
+  if(epFormArr.length===0){ alert('Tambahkan minimal 1 episode.'); return; }
+  for(const ep of epFormArr){ if(!ep.videoSrc){ alert('Episode '+ep.num+' belum ada sumber video.'); return; } }
+  const cat = document.getElementById('segDonghua').classList.contains('on') ? 'donghua' : 'anime';
+  const data = {
+    title, cat,
+    poster: document.getElementById('fPoster').value.trim(),
+    banner: document.getElementById('fBanner').value.trim(),
+    desc: document.getElementById('fDesc').value.trim(),
+    nextEpDate: document.getElementById('fNextDate').value,
+    episodes: epFormArr.slice().sort((a,b)=>a.num-b.num)
+  };
+  try{
+    if(editingTitleId){
+      await db.collection('titles').doc(editingTitleId).set(data, {merge:true});
+    } else {
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection('titles').add(data);
+    }
+    closeScreen('addScreen');
+  }catch(e){ alert('Gagal menyimpan: '+e.message); }
+}
+async function deleteTitle(){
+  if(!confirm('Hapus judul ini beserta semua episodenya untuk semua akun?')) return;
+  try{ await db.collection('titles').doc(editingTitleId).delete(); closeScreen('addScreen'); }
+  catch(e){ alert('Gagal menghapus: '+e.message); }
+}
+
+/* ---------- PLAYER ---------- */
+const videoEl = document.getElementById('videoEl');
+let progressSaveTimer = null;
+function playEpisode(titleId, epId){
+  const t = library.find(x=>x.id===titleId); const ep = t.episodes.find(e=>e.id===epId);
+  if(!hasAccess(ep)){ openUnlockModal(titleId, epId); return; }
+  currentPlayingTitleId = titleId; currentPlayingEpId = epId;
+  document.getElementById('pTitle').textContent = t.title + ' · Episode ' + ep.num;
+  const tag = document.getElementById('pTag');
+  tag.textContent = t.cat==='donghua' ? 'DONGHUA' : 'ANIME';
+  tag.style.background = t.cat==='donghua' ? 'rgba(232,169,60,0.9)' : 'rgba(63,191,158,0.9)';
+  tag.style.color = t.cat==='donghua' ? '#20160a' : '#0a1f1a';
+  document.getElementById('pDesc').textContent = t.desc || '';
+  videoEl.src = ep.videoSrc;
+  const saved = (profile.progress||{})[ep.id];
+  videoEl.currentTime = saved ? saved.progress||0 : 0;
+  updateEpNavButtons();
+  document.getElementById('detailScreen').classList.remove('show');
+  document.getElementById('playerScreen').classList.add('show');
+  videoEl.play().catch(()=>{});
+}
+function updateEpNavButtons(){
+  const t = library.find(x=>x.id===currentPlayingTitleId);
+  const idx = t.episodes.findIndex(e=>e.id===currentPlayingEpId);
+  document.getElementById('prevEpBtn').disabled = idx<=0;
+  document.getElementById('nextEpBtn').disabled = idx>=t.episodes.length-1;
+}
+function playAdjacentEp(dir){
+  const t = library.find(x=>x.id===currentPlayingTitleId);
+  const idx = t.episodes.findIndex(e=>e.id===currentPlayingEpId);
+  const nIdx = idx+dir;
+  if(nIdx<0 || nIdx>=t.episodes.length) return;
+  const nEp = t.episodes[nIdx];
+  if(!hasAccess(nEp)){ closeScreen('playerScreen'); openUnlockModal(t.id, nEp.id); return; }
+  playEpisode(t.id, nEp.id);
+}
+videoEl.addEventListener('timeupdate', ()=>{
+  if(!currentPlayingEpId || !profile) return;
+  if(!profile.progress) profile.progress = {};
+  profile.progress[currentPlayingEpId] = {
+    progress: videoEl.currentTime,
+    duration: videoEl.duration || (profile.progress[currentPlayingEpId]?.duration || 0),
+    lastPlayed: Date.now()
+  };
+});
+videoEl.addEventListener('play', ()=>{ clearInterval(progressSaveTimer); progressSaveTimer = setInterval(saveProfile, 5000); });
+videoEl.addEventListener('pause', ()=>{ clearInterval(progressSaveTimer); saveProfile(); });
+function closeScreen(id){
+  if(id==='playerScreen'){ videoEl.pause(); clearInterval(progressSaveTimer); saveProfile(); }
+  document.getElementById(id).classList.remove('show');
+}
+
+/* ---------- SW ---------- */
+if('serviceWorker' in navigator){ window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
+</script>
+</body>
+</html>
